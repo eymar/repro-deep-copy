@@ -16,12 +16,10 @@ kotlin {
     linuxX64()
     macosArm64()
     macosX64()
+}
 
-    sourceSets {
-        commonMain {
-            dependencies {
-                implementation(project(":dependencies"))
-            }
-        }
+tasks.named("compileKotlinJs") {
+    it.kotlinOptions {
+        freeCompilerArgs += "-Xklib-enable-signature-clash-checks=false"
     }
 }

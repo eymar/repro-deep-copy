@@ -1,18 +1,23 @@
 package repro.deepcopy
 
-import repro.deepcopy.generation.IrExtensionsRepro
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
-import org.jetbrains.kotlin.com.intellij.mock.MockProject
-import org.jetbrains.kotlin.compiler.plugin.ComponentRegistrar
+import org.jetbrains.kotlin.compiler.plugin.CompilerPluginRegistrar
+import org.jetbrains.kotlin.compiler.plugin.ExperimentalCompilerApi
 import org.jetbrains.kotlin.config.CompilerConfiguration
-import org.jetbrains.kotlin.config.KotlinCompilerVersion
+import org.jetbrains.kotlin.serialization.DescriptorSerializerPlugin
+import repro.deepcopy.generation.IrExtension
 
-class ReproDeepCopyRegistrar @JvmOverloads constructor(
-    private val enabled: Boolean = false
-): ComponentRegistrar {
-    override fun registerProjectComponents(project: MockProject, configuration: CompilerConfiguration) {
-        require(KotlinCompilerVersion.getVersion() == "1.6.0-M1")
-        IrGenerationExtension.registerExtension(project, IrExtensionsRepro())
+@OptIn(ExperimentalCompilerApi::class)
+class ReproDeepCopyRegistrar : CompilerPluginRegistrar() {
+
+    override val supportsK2: Boolean
+        get() = false
+
+    override fun ExtensionStorage.registerExtensions(configuration: CompilerConfiguration) {
+        IrGenerationExtension.registerExtension(IrExtension())
+
+        // Without MyDescriptorSerializerPlugin, the annotation won't be seen on JVM too
+        // But, unfortunately, it doesn't help k/js and k/native
+        DescriptorSerializerPlugin.registerExtension(MyDescriptorSerializerPlugin())
     }
-
 }
