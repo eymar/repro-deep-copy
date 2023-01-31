@@ -1,4 +1,5 @@
 rootProject.name = 'repro-deep-copy-function'
 include 'repro:kotlin-plugin'
 include 'dependencies'
+include 'dependencies2'
 include 'integration'
