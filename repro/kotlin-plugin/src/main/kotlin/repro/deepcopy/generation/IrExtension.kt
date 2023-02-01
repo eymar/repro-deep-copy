@@ -129,19 +129,19 @@ class Transformation(
                     "Annotations = " + clsDescriptor.annotations.joinToString(prefix = "[", postfix = "]") { it.fqName?.asString() ?: "null" }
         }
 
-//        assert(cls.hasAnnotation(fqName))
+        assert(cls.hasAnnotation(fqName))
 
 
-//        assert(cls.annotations.size == 1) {
+        assert(cls.annotations.size == 1) {
              //This assert fails in k/js and k/native
-//            "Expected 1 annotation, but were - ${cls.annotations.size}"
-//        }
+            "Expected 1 annotation, but were - ${cls.annotations.size}"
+        }
 
-//        (cls.annotations.first().type.classifierOrNull!!.owner as IrClass).also {
-//            assert(it.fqNameForIrSerialization == fqName) {
-//                "Expected annotation - $fqName, but was - ${it.fqNameForIrSerialization}"
-//            }
-//        }
+        (cls.annotations.first().type.classifierOrNull!!.owner as IrClass).also {
+            assert(it.fqNameForIrSerialization == fqName) {
+                "Expected annotation - $fqName, but was - ${it.fqNameForIrSerialization}"
+            }
+        }
     }
 }
 

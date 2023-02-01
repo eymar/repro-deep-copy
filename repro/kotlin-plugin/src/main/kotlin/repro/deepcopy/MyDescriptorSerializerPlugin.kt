@@ -32,7 +32,7 @@ class MyDescriptorSerializerPlugin : DescriptorSerializerPlugin {
         if (descriptor.isData && descriptor.name.asString().contains("Abc")) {
             proto.flags = proto.flags or hasAnnotationFlag
             val annotationProto = ProtoBuf.Annotation.newBuilder().apply {
-                id = extension.stringTable.getQualifiedClassNameIndex(ClassId.fromString("my.abc.example.AbcAnnotation"))
+                id = extension.stringTable.getQualifiedClassNameIndex(ClassId.fromString("my/abc/example/AbcAnnotation"))
             }.build()
             proto.addExtension(KlibMetadataSerializerProtocol.classAnnotation, annotationProto)
         }
