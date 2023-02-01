@@ -8,6 +8,7 @@ import org.jetbrains.kotlin.ir.ObsoleteDescriptorBasedAPI
 import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.declarations.*
 import org.jetbrains.kotlin.ir.expressions.impl.IrConstructorCallImpl
+import org.jetbrains.kotlin.ir.interpreter.toIrConst
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.classFqName
 import org.jetbrains.kotlin.ir.types.classifierOrNull
@@ -22,12 +23,13 @@ import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.platform.jvm.isJvm
 
 class IrExtension(
+    val annotatedIrClasses: MutableMap<FqName, Int>,
     val remapDescriptors: Boolean = false // it can be changed manually here only
 ) : IrGenerationExtension {
 
     override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
         try {
-            moduleFragment.transformChildrenVoid(Transformation(pluginContext))
+            moduleFragment.transformChildrenVoid(Transformation(pluginContext, annotatedIrClasses))
 
             if (remapDescriptors) { // JVM works when this either true or false anyway. But it doesn't help k/js and k/native
                 // It just ensures that all declarations have new IrBasedDescriptors (with add @AbcAnnotation),
@@ -73,7 +75,8 @@ class IrExtension(
 
 
 class Transformation(
-    val context: IrPluginContext
+    val context: IrPluginContext,
+    val annotatedIrClasses: MutableMap<FqName, Int>,
 ) : IrElementTransformerVoid() {
 
     val fqName = FqName("my.abc.example.AbcAnnotation")
@@ -92,8 +95,11 @@ class Transformation(
                 UNDEFINED_OFFSET,
                 annotation.defaultType,
                 annotation.constructors.first(),
-                0, 0, 0
-            )
+                0, 0, 1
+            ).also {
+                it.putValueArgument(0, 230201.toIrConst(context.irBuiltIns.intType))
+            }
+            annotatedIrClasses[original.fqNameForIrSerialization] = 230201
         }
 
         return original
@@ -129,6 +135,10 @@ class Transformation(
                     "Annotations = " + clsDescriptor.annotations.joinToString(prefix = "[", postfix = "]") { it.fqName?.asString() ?: "null" }
         }
 
+        clsDescriptor.annotations.findAnnotation(fqName)!!.allValueArguments.also {
+            assert(it.entries.first().value.value == 230201)
+        }
+
         assert(cls.hasAnnotation(fqName))
 
 
@@ -141,6 +151,10 @@ class Transformation(
             assert(it.fqNameForIrSerialization == fqName) {
                 "Expected annotation - $fqName, but was - ${it.fqNameForIrSerialization}"
             }
+        }
+
+        cls.annotations.findAnnotation(fqName)!!.getValueArgument(0).also {
+            assert(it!!.isIntegerConst(230201))
         }
     }
 }

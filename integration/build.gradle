@@ -10,6 +10,8 @@ dependencies {
 kotlin {
     js(IR) {
         browser()
+        nodejs()
+        binaries.executable()
     }
     jvm()
     mingwX64()
@@ -22,6 +24,12 @@ kotlin {
             dependencies {
                 implementation(project(":dependencies"))
                 implementation(project(":dependencies2"))
+            }
+        }
+
+        commonTest {
+            dependencies {
+                implementation(kotlin("test"))
             }
         }
     }

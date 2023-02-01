@@ -1,7 +1,7 @@
 package my.abc.example
 
 @Retention(AnnotationRetention.RUNTIME)
-annotation class AbcAnnotation // To be added by compiler plugin
+annotation class AbcAnnotation(val i: Int) // To be added by compiler plugin
 
 
 // The target class
