@@ -1,1 +1,1 @@
-repro.deepcopy.RerproDeepCopyCommandLineProcessor
+androidx.compose.compiler.plugins.kotlin.ComposeCommandLineProcessor

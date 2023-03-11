@@ -1,9 +1,12 @@
 apply plugin: "org.jetbrains.kotlin.jvm"
 
 dependencies {
-    implementation "org.jetbrains.kotlin:kotlin-stdlib"
-    implementation "org.jetbrains.kotlin:kotlin-gradle-plugin-api"
-    compileOnly "org.jetbrains.kotlin:kotlin-compiler-embeddable"
+//    implementation "org.jetbrains.kotlin:kotlin-stdlib"
+//    implementation "org.jetbrains.kotlin:kotlin-gradle-plugin-api"
+//    compileOnly "org.jetbrains.kotlin:kotlin-compiler-embeddable"
+    implementation("org.jetbrains.kotlin:kotlin-compiler:1.8.0")
+//    implementation("org.jetbrains.kotlin:kotlin-compiler-embeddable:1.8.0")
+    implementation("org.jetbrains.kotlin:kotlin-stdlib:1.8.0")
 }
 
 compileKotlin {
