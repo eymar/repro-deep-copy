@@ -1,3 +1,5 @@
+import org.jetbrains.kotlin.gradle.dsl.KotlinJsCompile
+
 plugins {
     id("org.jetbrains.kotlin.multiplatform")
 }
@@ -40,11 +42,15 @@ kotlin {
         val desktopTest by getting {
             dependsOn(jvmTest)
         }
+        val jsNativeMain by creating {
+            dependsOn(commonMain)
+        }
+        val jsMain by getting {
+            dependsOn(jsNativeMain)
+        }
     }
 }
 
-//tasks.named("compileKotlinJs") {
-//    kotlinOptions {
-//        freeCompilerArgs += "-Xklib-enable-signature-clash-checks=false"
-//    }
-//}
+tasks.withType<KotlinJsCompile>().forEach {
+    it.kotlinOptions.freeCompilerArgs += "-Xklib-enable-signature-clash-checks=false"
+}

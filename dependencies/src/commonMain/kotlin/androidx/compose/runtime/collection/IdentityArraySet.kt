@@ -25,7 +25,7 @@ import kotlin.contracts.contract
  * both sorting and uniqueness.
  */
 @OptIn(ExperimentalContracts::class)
-internal class IdentityArraySet<T : Any> : Set<T> {
+class IdentityArraySet<T : Any> : Set<T> {
     override var size = 0
 
     @PublishedApi
@@ -228,5 +228,11 @@ internal class IdentityArraySet<T : Any> : Set<T> {
         var index = 0
         override fun hasNext(): Boolean = index < size
         override fun next(): T = this@IdentityArraySet.values[index++] as T
+    }
+}
+
+fun identitySetOf(vararg any: Any): IdentityArraySet<Any> {
+    return IdentityArraySet<Any>().apply {
+        any.forEach { add(it) }
     }
 }

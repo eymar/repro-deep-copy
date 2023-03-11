@@ -1014,7 +1014,7 @@ class Recomposer(
         }
     }
 
-    private fun performRecompose(
+    internal fun performRecompose(
         composition: ControlledComposition,
         modifiedValues: IdentityArraySet<Any>?
     ): ControlledComposition? {

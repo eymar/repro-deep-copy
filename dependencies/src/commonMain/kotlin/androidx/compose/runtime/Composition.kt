@@ -856,6 +856,7 @@ internal class CompositionImpl(
         synchronized(lock) {
             guardChanges {
                 composer.changesApplied()
+                composer.createFreshInsertTable()
 
                 // By this time all abandon objects should be notified that they have been abandoned.
                 if (this.abandonSet.isNotEmpty()) {

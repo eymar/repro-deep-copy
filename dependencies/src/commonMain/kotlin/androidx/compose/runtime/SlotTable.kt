@@ -1947,7 +1947,8 @@ internal class SlotWriter(
             fromIndex: Int,
             toWriter: SlotWriter,
             updateFromCursor: Boolean,
-            updateToCursor: Boolean
+            updateToCursor: Boolean,
+            skipDelete: Boolean = false
         ): List<Anchor> {
             val groupsToMove = fromWriter.groupSize(fromIndex)
             val sourceGroupsEnd = fromIndex + groupsToMove
@@ -2055,7 +2056,9 @@ internal class SlotWriter(
             } else emptyList()
 
             val parentGroup = fromWriter.parent(fromIndex)
-            val anchorsRemoved = if (updateFromCursor) {
+            val anchorsRemoved = if (skipDelete) {
+                false
+            } else if (updateFromCursor) {
                 // Remove the group using the sequence the writer expects when removing a group, that
                 // is the root group and the group's parent group must be correctly started and ended
                 // when it is not a root group.
@@ -2162,7 +2165,7 @@ internal class SlotWriter(
      *
      * @return a list of the anchors that were moved
      */
-    fun moveFrom(table: SlotTable, index: Int): List<Anchor> {
+    fun moveFrom(table: SlotTable, index: Int, skipDelete: Boolean = false): List<Anchor> {
         runtimeCheck(insertCount > 0)
 
         if (index == 0 && currentGroup == 0 && this.table.groupsSize == 0) {
@@ -2194,7 +2197,8 @@ internal class SlotWriter(
                 index,
                 this,
                 updateFromCursor = true,
-                updateToCursor = true
+                updateToCursor = true,
+                skipDelete = skipDelete
             )
         }
     }

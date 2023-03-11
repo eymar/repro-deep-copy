@@ -2005,7 +2005,7 @@ internal class ComposerImpl(
         }
     }
 
-    private fun createFreshInsertTable() {
+    internal fun createFreshInsertTable() {
         runtimeCheck(writer.closed)
         insertTable = SlotTable()
         writer = insertTable.openWriter().also { it.close() }
@@ -3435,7 +3435,8 @@ internal class ComposerImpl(
             val insertTable = insertTable
             recordSlotEditingOperation { _, slots, _ ->
                 slots.beginInsert()
-                slots.moveFrom(insertTable, anchor.toIndexFor(insertTable))
+                slots.moveFrom(insertTable, anchor.toIndexFor(insertTable), skipDelete = true)
+//                slots.moveFrom(insertTable, anchor.toIndexFor(insertTable))
                 slots.endInsert()
             }
         } else {
@@ -3451,7 +3452,8 @@ internal class ComposerImpl(
                     }
                 }
                 slots.beginInsert()
-                slots.moveFrom(insertTable, anchor.toIndexFor(insertTable))
+                slots.moveFrom(insertTable, anchor.toIndexFor(insertTable), skipDelete = true)
+//                slots.moveFrom(insertTable, anchor.toIndexFor(insertTable))
                 slots.endInsert()
             }
         }
