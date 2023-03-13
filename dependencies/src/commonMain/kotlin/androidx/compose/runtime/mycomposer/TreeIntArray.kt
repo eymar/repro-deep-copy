@@ -4,14 +4,16 @@ class TreeIntArray(initSize: Int = 100): Iterable<Int> {
 
 
     internal var size = initSize
-    internal var root = AvlBstNode.create(count = size)
+        private set
+
+    internal var root: AvlBstNode? = AvlBstNode.create(count = size)
 
     operator fun get(ix: Int): Int {
-        return root[ix]
+        return root!![ix]
     }
 
     operator fun set(ix: Int, value: Int) {
-        root[ix] = value
+        root!![ix] = value
     }
 
     override fun iterator(): Iterator<Int> {
@@ -27,13 +29,18 @@ class TreeIntArray(initSize: Int = 100): Iterable<Int> {
     }
 
     private fun updateSize() {
-        size = root.lastIndex() + 1
+        size = if (root != null) root!!.lastIndex() + 1 else 0
     }
 
     fun insert(atIx: Int, value: Int = 0) {
-        root = root.mainInsert(atIx, value)
+        root = root!!.mainInsert(atIx, value)
         updateSize()
         //validateAllReachable()
+    }
+
+    fun delete(atIx: Int) {
+        root = root!!.delete(atIx)
+        updateSize()
     }
 
     fun validateAllReachable() {
@@ -45,17 +52,17 @@ class TreeIntArray(initSize: Int = 100): Iterable<Int> {
                 throw Exception("Validation failed while trying to get[$it]", e)
             }
         }
-        root.validateValidDeltas()
+        root!!.validateValidDeltas()
     }
 
-    fun toList() = root.toList()
+    fun toList() = root!!.toList()
 
     fun printDump() {
-        root.printDump()
+        root!!.printDump()
     }
 
     fun inOrder(block: (AvlBstNode, actualIx: Int, isRoot: Boolean) -> Unit) {
-        root.inOrder { n, ix ->
+        root!!.inOrder { n, ix ->
             block(n, ix, n == root)
         }
     }
@@ -87,12 +94,16 @@ class AvlBstNode(
         return this.ixDelta + (this.right?.lastIndex() ?: 0)
     }
 
-    internal fun validateValidDeltas() {
-        require(this.ixDelta != 0)
-        if (this.left != null) require(this.left!!.ixDelta < 0)
-        if (this.right != null) require(this.right!!.ixDelta > 0)
-        this.left?.validateValidDeltas()
-        this.right?.validateValidDeltas()
+    internal fun validateValidDeltas(level: Int = 0) {
+        if (level > 0) require(this.ixDelta != 0)
+        if (this.left != null) require(this.left!!.ixDelta < 0) {
+            "left ixDelta should be < 0, but was ${this.left!!.ixDelta}"
+        }
+        if (this.right != null) require(this.right!!.ixDelta > 0) {
+            "left ixDelta should be > 0, but was ${this.right!!.ixDelta}"
+        }
+        this.left?.validateValidDeltas(level + 1)
+        this.right?.validateValidDeltas(level + 1)
     }
 
     fun internalGet(ix: Int, deltaIx: Int = 0): Int {
@@ -101,7 +112,7 @@ class AvlBstNode(
         if (ix < adjustedCurrentIx) return left?.internalGet(ix, deltaIx + this.ixDelta) ?:
             error("Can't get value for index=$ix. It's lower than $adjustedCurrentIx")
         if (ix > adjustedCurrentIx) return right?.internalGet(ix, deltaIx + this.ixDelta) ?:
-            error("Can't get value for index=$ix. It's greated than $adjustedCurrentIx")
+            error("Can't get value for index=$ix. It's greater than $adjustedCurrentIx")
         error("Can't get value for index=$ix")
     }
 
@@ -118,6 +129,12 @@ class AvlBstNode(
 
     }
 
+    fun delete(atIx: Int): AvlBstNode? {
+        val r = internalDelete(atIx)
+        r?.updateDeltasAfterRemoval(atIx)
+        return r
+    }
+
     fun mainInsert(atIx: Int, value: Int = 0): AvlBstNode {
         val newRoot = newInternalInsert(atIx, value)
         newRoot.updateDeltasAfterInsert(atIx)
@@ -127,11 +144,14 @@ class AvlBstNode(
     }
 
     fun toList(): List<Int> {
-        val result = mutableListOf<Int>()
-        inOrder { avlBstNode, _ ->
-            result.add(avlBstNode.value)
+        return (0..lastIndex()).map {
+            get(it)
         }
-        return result
+//        val result = mutableListOf<Int>()
+//        inOrder { avlBstNode, _ ->
+//            result.add(avlBstNode.value)
+//        }
+//        return result
     }
 
     @Suppress("KotlinConstantConditions")
@@ -187,6 +207,141 @@ class AvlBstNode(
                 check(newIx == oldIx) { "newIx = $newIx, oldIx = $oldIx"}
             }
         }
+    }
+
+    private fun updateDeltasAfterRemoval(
+        removedAt: Int,
+        oldDelta: Int = 0,
+        newDelta: Int = 0,
+    ) {
+        val oldIx = oldDelta + this.ixDelta
+        var newIx = newDelta + this.ixDelta
+
+        if (removedAt > oldIx) {
+            if (oldIx != newIx) {
+                check(oldIx - newIx == 1)
+                newIx += 1
+                this.ixDelta += 1
+                check(this.ixDelta != 0) { "was = ${this.ixDelta}" }
+            }
+            this.right?.updateDeltasAfterRemoval(removedAt, oldIx, newIx)
+        } else if (removedAt < oldIx) {
+            if (oldIx == newIx) {
+                newIx -= 1
+                this.ixDelta -= 1
+                if (newIx != 0) check(this.ixDelta != 0) { "was = ${this.ixDelta}" }
+            } else {
+                check(newIx < oldIx)
+            }
+            this.left?.updateDeltasAfterRemoval(removedAt, oldIx, newIx)
+        } else {
+            if (newIx > oldIx) {
+                this.ixDelta -= 1
+                newIx -= 1
+            } else if (newIx < oldIx) {
+                this.ixDelta += 1
+                newIx += 1
+            }
+        }
+    }
+
+    private fun validateIxDelta(extraText: String = "") {
+        check(this.ixDelta >= 0) {
+            "Was ${this.ixDelta}"
+        }
+    }
+
+     fun internalDelete(atIx: Int, deltaIx: Int = 0): AvlBstNode? {
+        val adjustedDelta = deltaIx + this.ixDelta
+        val adjustedIx = adjustedDelta
+        if (atIx == adjustedIx) {
+            if (this.left == null && this.right == null) {
+                return null
+            }
+            if (this.right != null) {
+                val r = this.right!!.findNextGreaterReplacementFor(atIx, adjustedDelta)
+                r.left = this.left
+                if (r == this.right) {
+                    r.right = null
+                } else {
+                    r.right = this.right
+                }
+                r.ixDelta = this.ixDelta
+                updateAvlParams(r)
+                check(r.right !== r)
+                check(r.left !== r)
+                return r
+            }
+            check(this.left != null) { "??? left is null" }
+            val r = this.left!!.findNextSmallerReplacementFor(atIx, adjustedDelta)
+            //r.right = this.right
+            r.ixDelta = this.ixDelta - 1
+            check(r.right !== r)
+            check(r.left !== r)
+            return r
+        }
+        if (atIx < adjustedIx) {
+            this.left = this.left!!.internalDelete(atIx, adjustedDelta)
+            updateAvlParams(this)
+            check(this.right != this)
+            check(this.left != this)
+            return this
+        }
+        if (atIx > adjustedIx && this.right != null) {
+            this.right = this.right!!.internalDelete(atIx, adjustedDelta)
+            updateAvlParams(this)
+            check(this.right !== this)
+            check(this.left !== this)
+            return this
+        }
+
+        error("Ix=$atIx not found. Current ix =$adjustedIx")
+    }
+
+    private fun findNextGreaterReplacementFor(atIx: Int, deltaIx: Int): AvlBstNode {
+        val adjustedDelta = deltaIx + this.ixDelta
+        val adjustedIx = adjustedDelta
+        if (atIx + 1 == adjustedIx) {
+            return this
+        }
+        val replacement = this.left?.findNextGreaterReplacementFor(atIx, adjustedDelta) ?:
+            error("Failed to find a gt replacement for $atIx. adjustedDelta = $adjustedDelta")
+        if (this.left === replacement) {
+            this.left = null
+            updateAvlParams(this)
+        }
+        check(replacement.left == null)
+        if (replacement.right != null) {
+            this.left = replacement.right
+            this.left!!.ixDelta = replacement.ixDelta
+            updateAvlParams(this)
+            replacement.right = null
+            updateAvlParams(replacement)
+        }
+        return replacement
+    }
+
+    private fun findNextSmallerReplacementFor(atIx: Int, deltaIx: Int): AvlBstNode {
+        val adjustedDelta = deltaIx + this.ixDelta
+        val adjustedIx = adjustedDelta
+        if (atIx - 1 == adjustedIx) {
+            return this
+        }
+        val replacement = this.right?.findNextGreaterReplacementFor(atIx, adjustedDelta) ?:
+            error("Failed to find a smaller replacement for $atIx. adjustedDelta = $adjustedDelta")
+        if (this.right == replacement) {
+            this.right = null
+            updateAvlParams(this)
+        }
+        check(replacement.right == null)
+        if (replacement.left != null) {
+            this.right = replacement.left
+            this.right!!.ixDelta = replacement.ixDelta
+            updateAvlParams(this)
+            replacement.left = null
+            updateAvlParams(replacement)
+        }
+        return replacement
     }
 
     fun newInternalInsert(atIx: Int, value: Int = 0, ixDelta: Int = 0): AvlBstNode {

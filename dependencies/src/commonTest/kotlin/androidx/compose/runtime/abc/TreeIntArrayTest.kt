@@ -3,6 +3,7 @@ package androidx.compose.runtime.abc
 import androidx.compose.runtime.mycomposer.AvlBstNode
 import androidx.compose.runtime.mycomposer.TreeIntArray
 import kotlin.math.roundToInt
+import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -276,6 +277,94 @@ class TreeIntArrayTest {
 
         t = t.mainInsert(3)
         t.printDump()
+    }
+
+    @Test
+    fun canDelete() {
+        var t: AvlBstNode? = AvlBstNode.create(10)
+        repeat(10) { t!![it] = it}
+        val expectedList = (0 .. 9).toMutableList()
+        assertEquals(expectedList, t!!.toList())
+
+        t = t.delete(5)!!
+        assertEquals(8, t.lastIndex())
+        expectedList.removeAt(5)
+        assertEquals(expectedList, t.toList())
+        t.validateValidDeltas()
+
+        t = t.delete(5)!!
+        assertEquals(7, t.lastIndex())
+        expectedList.removeAt(5)
+        assertEquals(expectedList, t.toList())
+        t.validateValidDeltas()
+
+        t = t.delete(5)!!
+        assertEquals(6, t.lastIndex())
+        expectedList.removeAt(5)
+        assertEquals(expectedList, t.toList())
+        t.validateValidDeltas()
+
+        t = t.delete(5)!!
+        assertEquals(5, t.lastIndex())
+        expectedList.removeAt(5)
+        assertEquals(expectedList, t.toList())
+        t.validateValidDeltas()
+
+        t = t.delete(5)!!
+        assertEquals(4, t.lastIndex())
+        expectedList.removeAt(5)
+        assertEquals(expectedList, t.toList())
+        t.validateValidDeltas()
+
+        t = t.delete(0)!!
+        assertEquals(3, t.lastIndex())
+        expectedList.removeAt(0)
+        assertEquals(expectedList, t.toList())
+        t.validateValidDeltas()
+
+        t = t.delete(0)!!
+        assertEquals(2, t.lastIndex())
+        expectedList.removeAt(0)
+        assertEquals(expectedList, t.toList())
+        t.validateValidDeltas()
+
+        t = t.delete(0)!!
+        assertEquals(1, t.lastIndex())
+        expectedList.removeAt(0)
+        assertEquals(expectedList, t.toList())
+        t.validateValidDeltas()
+
+        t = t.delete(0)!!
+        assertEquals(0, t.lastIndex())
+        expectedList.removeAt(0)
+        assertEquals(expectedList, t.toList())
+        t.validateValidDeltas()
+
+        t = t.delete(0)
+        assertEquals(null, t)
+    }
+
+    @Test
+    fun deleteInRandomPositions() {
+        val size = 1_00
+        val expectedList = (0 until size).toMutableList()
+        val t = TreeIntArray(size)
+        assertEquals(size, t.size)
+
+        expectedList.forEachIndexed { index, i ->
+            t[index] = i
+        }
+        assertEquals(expectedList, t.toList())
+
+        val deleteAmout = 50
+        repeat(deleteAmout) {
+            val random = Math.random()
+            val pos = (expectedList.size * random)
+                .roundToInt().coerceAtMost(expectedList.lastIndex)
+            expectedList.removeAt(pos)
+            t.delete(pos)
+            assertEquals(expectedList.size, t.size)
+        }
     }
 }
 
