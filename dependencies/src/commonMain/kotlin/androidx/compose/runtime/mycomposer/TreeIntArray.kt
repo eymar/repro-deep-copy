@@ -1,10 +1,10 @@
 package androidx.compose.runtime.mycomposer
 
-class TreeIntArray(initSize: Int = 100) {
+class TreeIntArray(initSize: Int = 100): Iterable<Int> {
 
 
     internal var size = initSize
-    internal var root = AvlBstNode.create(count = size, startIx = 0)
+    internal var root = AvlBstNode.create(count = size)
 
     operator fun get(ix: Int): Int {
         return root[ix]
@@ -12,6 +12,52 @@ class TreeIntArray(initSize: Int = 100) {
 
     operator fun set(ix: Int, value: Int) {
         root[ix] = value
+    }
+
+    override fun iterator(): Iterator<Int> {
+        return object : Iterator<Int> {
+            var ix = 0
+
+            override fun hasNext(): Boolean = ix < size
+
+            override fun next(): Int {
+                return get(ix++)
+            }
+        }
+    }
+
+    private fun updateSize() {
+        size = root.lastIndex() + 1
+    }
+
+    fun insert(atIx: Int, value: Int = 0) {
+        root = root.mainInsert(atIx, value)
+        updateSize()
+        //validateAllReachable()
+    }
+
+    fun validateAllReachable() {
+        updateSize()
+        repeat(size) {
+            try {
+                get(it)
+            } catch (e: Throwable) {
+                throw Exception("Validation failed while trying to get[$it]", e)
+            }
+        }
+        root.validateValidDeltas()
+    }
+
+    fun toList() = root.toList()
+
+    fun printDump() {
+        root.printDump()
+    }
+
+    fun inOrder(block: (AvlBstNode, actualIx: Int, isRoot: Boolean) -> Unit) {
+        root.inOrder { n, ix ->
+            block(n, ix, n == root)
+        }
     }
 }
 
@@ -25,32 +71,29 @@ class AvlBstNode(
 ) {
 
     companion object {
-         fun create(count: Int, startIx: Int = 0): AvlBstNode {
-            val halfIx = startIx + count / 2
-            val subRoot = AvlBstNode(halfIx)
-            val lastIx = startIx + count - 1
-
-            var l = halfIx - 1
-            var r = halfIx + 1
-
-            while (l >= startIx || r <= lastIx) {
-                if (l >= startIx) {
-                    subRoot.internalSet(l, 0, forceInsert = true)
-                    l--
-                }
-                if (r <= lastIx) {
-                    subRoot.internalSet(r, 0, forceInsert = true)
-                    r++
-                }
-            }
-            return subRoot
+         fun create(count: Int): AvlBstNode {
+             if (count <= 0) error("count should be at least 1, but count=$count")
+             var subRoot = AvlBstNode(value = 0)
+             repeat(count - 1) {
+                 subRoot = subRoot.mainInsert(it)
+             }
+             return subRoot
         }
     }
 
     private var ixDelta = 0
 
-//    val realIx: Int
-//        get() = ix + ixDelta
+    fun lastIndex(): Int {
+        return this.ixDelta + (this.right?.lastIndex() ?: 0)
+    }
+
+    internal fun validateValidDeltas() {
+        require(this.ixDelta != 0)
+        if (this.left != null) require(this.left!!.ixDelta < 0)
+        if (this.right != null) require(this.right!!.ixDelta > 0)
+        this.left?.validateValidDeltas()
+        this.right?.validateValidDeltas()
+    }
 
     fun internalGet(ix: Int, deltaIx: Int = 0): Int {
         val adjustedCurrentIx = this.ixDelta + deltaIx
@@ -66,13 +109,6 @@ class AvlBstNode(
         return internalGet(ix)
     }
 
-//    fun get(key: Int): Value? {
-//        if (key == this.key) return value
-//        if (this.key < key) return left?.get(key)
-//        if (this.key > key) return right?.get(key)
-//        return null
-//    }
-
 
     operator fun set(ix: Int, value: Int) {
         internalSet(ix, value)
@@ -82,66 +118,125 @@ class AvlBstNode(
 
     }
 
-    fun internalInsert(atIx: Int, ixDelta: Int = 0, leftTurnCounter: Int = 0, fromLeft: Boolean = false, fromRight: Boolean = false) : AvlBstNode {
+    fun mainInsert(atIx: Int, value: Int = 0): AvlBstNode {
+        val newRoot = newInternalInsert(atIx, value)
+        newRoot.updateDeltasAfterInsert(atIx)
+
+//        return newRoot
+        return newRoot.balanceAfterInsert(atIx)
+    }
+
+    fun toList(): List<Int> {
+        val result = mutableListOf<Int>()
+        inOrder { avlBstNode, _ ->
+            result.add(avlBstNode.value)
+        }
+        return result
+    }
+
+    @Suppress("KotlinConstantConditions")
+    private fun balanceAfterInsert(insertedAt: Int, ixDelta: Int = 0): AvlBstNode {
         val adjustedDelta = ixDelta + this.ixDelta
         val adjustedIx = adjustedDelta
-        if (adjustedIx == atIx) {
-            val newNode = AvlBstNode( 0)
-            if (!fromLeft && !fromRight) {
-                newNode.ixDelta = this.ixDelta
-                this.ixDelta += 1
-            } else if (fromLeft) {
-                newNode.ixDelta = this.ixDelta - 1
-                this.ixDelta += 1
-            } else if (fromRight) {
-                newNode.ixDelta = this.ixDelta + 1
+
+        if (insertedAt == adjustedIx) {
+            updateAvlParams(this)
+            return balanceAvl(this)
+        }
+        if (insertedAt < adjustedIx) {
+            val newLeft = this.left!!.balanceAfterInsert(insertedAt, adjustedDelta)
+            this.left = newLeft
+            updateAvlParams(this)
+            return balanceAvl(this)
+        }
+        if (insertedAt > adjustedIx) {
+            val newRight = this.right!!.balanceAfterInsert(insertedAt, adjustedDelta)
+            this.right = newRight
+            updateAvlParams(this)
+            return balanceAvl(this)
+        }
+        error("sadness")
+    }
+
+    @Suppress("ConvertTwoComparisonsToRangeCheck")
+    private fun updateDeltasAfterInsert(
+        insertedAt: Int,
+        oldDelta: Int = 0,
+        newDelta: Int = 0,
+    ) {
+        val oldIx = oldDelta + this.ixDelta
+        var newIx = newDelta + this.ixDelta
+
+        if (insertedAt < oldIx) {
+            if (newIx == oldIx) {
+                newIx += 1
                 this.ixDelta += 1
             }
-            if (this.ixDelta == 0) this.ixDelta += 1
-//            if (leftTurnCounter > 0) {
-//                newNode.ixDelta = this.ixDelta - 1
-//            } else {
-//                newNode.ixDelta = this.ixDelta
-//            }
-//            this.ixDelta = 1
+            this.left?.updateDeltasAfterInsert(insertedAt, oldIx, newIx)
+        } else if(insertedAt > oldIx) {
+            if (newIx > oldIx) {
+                newIx -= 1
+                this.ixDelta -= 1
+                check(newIx == oldIx) { "newIx = $newIx, oldIx = $oldIx"}
+            }
+            this.right?.updateDeltasAfterInsert(insertedAt, oldIx, newIx)
+        } else {
+            if (newIx > oldIx) {
+                this.ixDelta -= 1
+                newIx -= 1
+                check(newIx == oldIx) { "newIx = $newIx, oldIx = $oldIx"}
+            }
+        }
+    }
 
+    fun newInternalInsert(atIx: Int, value: Int = 0, ixDelta: Int = 0): AvlBstNode {
+        val adjustedDelta = ixDelta + this.ixDelta
+        val adjustedIx = adjustedDelta
+
+        if (adjustedIx == atIx) {
+            val newNode = AvlBstNode(value)
             newNode.left = this.left
+            newNode.ixDelta = this.ixDelta
             this.left = null
 
+            this.ixDelta = 1
             updateAvlParams(this)
             newNode.right = balanceAvl(this)
-
-            updateAvlParams(newNode)
-
-            return balanceAvl(newNode)
+            return newNode
         }
-        if (atIx < adjustedIx && this.left != null) {
-            val n = this.left!!.internalInsert(atIx, ixDelta = adjustedDelta, leftTurnCounter = leftTurnCounter + 1, fromLeft = true)
-            if (n !== this.left) {
-                this.left = n
-            }
-            if (leftTurnCounter == 0) {
-                this.ixDelta++
-            }
-            updateAvlParams(this)
-            return balanceAvl(this)
+        if (atIx < adjustedIx) {
+            check(left != null) { "atIx = $atIx, currentIx = $adjustedIx" }
+            val n = left!!.newInternalInsert(atIx, value, adjustedDelta)
+            this.left = n
+            return this
         }
-        if (atIx > adjustedIx && this.right != null) {
-            val n = this.right!!.internalInsert(atIx, ixDelta = adjustedDelta, leftTurnCounter = leftTurnCounter, fromRight = true)
-            if (n !== this.right) {
+        if (atIx > adjustedIx) {
+            if (right != null) {
+                val n = right!!.newInternalInsert(atIx, value, adjustedDelta)
                 this.right = n
-            }
-            if (leftTurnCounter > 0) {
-                this.left?.ixDelta = this.left!!.ixDelta - 1
+            } else {
+                require(atIx - adjustedIx == 1) {
+                    "atIx = $atIx, adjustedIx = $adjustedIx"
+                }
+                val newNode = AvlBstNode(value)
+                newNode.ixDelta += 1
+                this.right = newNode
             }
             updateAvlParams(this)
-            return balanceAvl(this)
+            return this
         }
-        error("Index $atIx is expected to be present")
+        error("???")
     }
 
     fun inOrder(block: (AvlBstNode, actualIx: Int) -> Unit) {
         traverseInOder(block = block)
+    }
+
+    fun printDump() {
+        inOrder { it, ix ->
+            println("Ix = ${ix} (v = ${it.value})" + if(it == this) " - root" else "")
+        }
+        println("---\n")
     }
 
     private fun traverseInOder(ixDelta: Int = 0, block: (AvlBstNode, actualIx: Int) -> Unit) {
@@ -245,20 +340,29 @@ class AvlBstNode(
         val root = node.left!!
         root.ixDelta += node.ixDelta
         node.left = root.right
-        val nodeUpdated = updateAvlParams(node)
-        root.right = nodeUpdated
-        nodeUpdated.ixDelta -= root.ixDelta
+        node.ixDelta -= root.ixDelta
+//        println("nL.ixD = ${node.left?.ixDelta}, root.ixDelta=${root.ixDelta}, node.ixDelta=${node.ixDelta}")
+        node.left?.ixDelta = node.left!!.ixDelta - node.ixDelta
+        if (node.left != null) check(node.left!!.ixDelta < 0) { "ixDelta was ${node.left!!.ixDelta}" }
+        updateAvlParams(node)
+        root.right = node
+//        println("--Rr")
         return updateAvlParams(root)
     }
 
     @Suppress("DuplicatedCode")
     private fun leftRotation(node: AvlBstNode): AvlBstNode {
         val root = node.right!!
+        val oldD = node.ixDelta + root.ixDelta
         root.ixDelta += node.ixDelta
         node.right = root.left
-        val nodeUpdated = updateAvlParams(node)
-        root.left = nodeUpdated
-        nodeUpdated.ixDelta -= root.ixDelta
+        node.ixDelta -= root.ixDelta
+        val new = root.ixDelta + node.ixDelta
+        node.right?.ixDelta = node.right!!.ixDelta  + (oldD - new)
+        if (node.right != null) check(node.right!!.ixDelta > 0)
+        updateAvlParams(node)
+        root.left = node
+//        println("--Lr")
         return updateAvlParams(root)
     }
 }

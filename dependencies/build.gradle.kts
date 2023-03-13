@@ -10,14 +10,14 @@ dependencies {
 }
 
 kotlin {
-    js(IR) {
-        browser()
-    }
+//    js(IR) {
+//        browser()
+//    }
     jvm("desktop")
-    mingwX64()
-    linuxX64()
-    macosArm64()
-    macosX64()
+//    mingwX64()
+//    linuxX64()
+//    macosArm64()
+//    macosX64()
 
     sourceSets {
         val commonMain by getting {
@@ -42,12 +42,12 @@ kotlin {
         val desktopTest by getting {
             dependsOn(jvmTest)
         }
-        val jsNativeMain by creating {
-            dependsOn(commonMain)
-        }
-        val jsMain by getting {
-            dependsOn(jsNativeMain)
-        }
+//        val jsNativeMain by creating {
+//            dependsOn(commonMain)
+//        }
+//        val jsMain by getting {
+//            dependsOn(jsNativeMain)
+//        }
     }
 }
 
