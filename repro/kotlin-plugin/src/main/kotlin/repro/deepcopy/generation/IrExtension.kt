@@ -51,7 +51,11 @@ class Transformation(
             constructorSymbol = annotationConstructor.symbol
         )
         declaration.annotations += annotation
-        context.annotationsRegistrar.addMetadataVisibleAnnotationsToElement(declaration, annotation)
+        // for Beta1
+//        context.annotationsRegistrar.addMetadataVisibleAnnotationsToElement(declaration, annotation)
+
+        // for Beta2
+         context.metadataDeclarationRegistrar.addMetadataVisibleAnnotationsToElement(declaration, annotation)
     }
 
     override fun visitCall(expression: IrCall): IrExpression {
