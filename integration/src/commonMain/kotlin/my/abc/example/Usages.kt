@@ -13,6 +13,12 @@ fun thisFunctionShouldReturnTheStaticFieldValue(
 ): Int {
     error("The body is expected to be replaced by plugin")
 }
+
+fun thisFunctionShouldReturnTheStaticFieldValue(
+    instance: ThisClassShouldHaveAStaticFieldAddedByPluginN10.ThisClassShouldHaveAStaticFieldAddedByPluginNestedN111
+): Int {
+    error("The body is expected to be replaced by plugin")
+}
 fun thisFunctionShouldReturnTheStaticFieldValue2(
     instance: ThisClassShouldHaveAStaticFieldAddedByPluginN10
 ): Int {

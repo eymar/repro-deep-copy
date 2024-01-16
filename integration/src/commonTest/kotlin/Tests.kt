@@ -13,6 +13,14 @@ class Tests {
         assertEquals(10, i)
     }
 
+    @Test
+    fun test1_nested() {
+        val i = thisFunctionShouldReturnTheStaticFieldValue(
+            ThisClassShouldHaveAStaticFieldAddedByPluginN10.ThisClassShouldHaveAStaticFieldAddedByPluginNestedN111())
+        assertEquals(111, i)
+    }
+
+    @Test
     fun test1_2() {
         val i = thisFunctionShouldReturnTheStaticFieldValue2(ThisClassShouldHaveAStaticFieldAddedByPluginN10())
         assertEquals(10, i)

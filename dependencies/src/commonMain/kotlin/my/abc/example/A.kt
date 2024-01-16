@@ -6,7 +6,9 @@ fun AddAnnotationToThisFunToo() { // to test a case w/o an annotation in the sou
 
 }
 
-class ThisClassShouldHaveAStaticFieldAddedByPluginN10
+class ThisClassShouldHaveAStaticFieldAddedByPluginN10 {
+    class ThisClassShouldHaveAStaticFieldAddedByPluginNestedN111
+}
 
 private class ThisClassShouldHaveAStaticFieldAddedByPluginPrivateN10
 
