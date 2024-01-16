@@ -1,0 +1,3 @@
+class ThisClassShouldHaveAStaticFieldAddedByPluginNoPackageN20
+
+class ThisClassShouldHaveAStaticFieldAddedByPluginNoPackageN567890

@@ -11,7 +11,10 @@ kotlin {
     js(IR) {
         browser()
     }
-    jvm()
+    wasmJs() {
+        browser()
+    }
+//    jvm()
     mingwX64()
     linuxX64()
     macosArm64()
