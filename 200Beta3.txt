@@ -1,0 +1,39 @@
+
+package my.abc.example {
+    @Target(allowedTargets = {AnnotationTarget.CLASS}) @Retention(value = AnnotationRetention.BINARY) annotation class AnnotationToAddOnClasses constructor() : Annotation
+
+    @AnnotationToAddOnClasses data class DataClassWithManuallyAddedAnnotation constructor(i: Int) {
+        val i: Int
+        operator fun component1(): Int
+        fun copy(i: Int = ...): DataClassWithManuallyAddedAnnotation
+        override fun equals(other: Any?): Boolean
+        override fun hashCode(): Int
+        override fun toString(): String
+    }
+
+    interface MarkerType
+
+    @AnnotationToAddOnClasses data class TestMarkerDataClass @HiddenFromObjC constructor(i: Int, @HiddenFromObjC t: MarkerType) {
+        val i: Int
+        @HiddenFromObjC @field:HiddenFromObjC val t: MarkerType
+            @HiddenFromObjC get
+        operator fun component1(): Int
+        @HiddenFromObjC operator fun component2(): MarkerType
+        @AnnotationToAddOnClasses fun copy(i: Int = ..., @HiddenFromObjC t: MarkerType = ...): TestMarkerDataClass
+        @AnnotationToAddOnClasses override fun equals(other: Any?): Boolean
+        @AnnotationToAddOnClasses override fun hashCode(): Int
+        @AnnotationToAddOnClasses override fun toString(): String
+    }
+
+    @AnnotationToAddOnClasses class TestMarkerPlainClass @HiddenFromObjC constructor(i: Int, @HiddenFromObjC t: MarkerType) {
+        val i: Int
+        @HiddenFromObjC @field:HiddenFromObjC val t: MarkerType
+            @HiddenFromObjC get
+        @HiddenFromObjC fun copy(i: Int = ..., t: MarkerType = ...): TestMarkerPlainClass
+        override fun equals(other: Any?): Boolean
+        override fun hashCode(): Int
+        override fun toString(): String
+    }
+
+}
+

@@ -18,7 +18,7 @@ class ReproDeepCopyRegistrar : CompilerPluginRegistrar() {
     override fun ExtensionStorage.registerExtensions(configuration: CompilerConfiguration) {
         val useK2 = configuration.languageVersionSettings.languageVersion.usesK2
         KotlinCompilerVersion.getVersion()?.let {
-            println(it)
+            println(it + " use k2 = $useK2")
         }
         IrGenerationExtension.registerExtension(IrExtension())
     }
